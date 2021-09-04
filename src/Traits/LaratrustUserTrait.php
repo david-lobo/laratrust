@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Database\Eloquent\Model;
 use Laratrust\Checkers\LaratrustCheckerManager;
 
 trait LaratrustUserTrait
@@ -61,7 +62,10 @@ trait LaratrustUserTrait
         );
 
         if (Config::get('laratrust.teams.enabled')) {
-            $roles->withPivot(Config::get('laratrust.foreign_keys.team'));
+
+            foreach (Config::get('laratrust.foreign_keys.team') as $team) {
+                $roles->withPivot($team);
+            }
         }
 
         return $roles;
@@ -150,7 +154,9 @@ trait LaratrustUserTrait
         );
 
         if (Config::get('laratrust.teams.enabled')) {
-            $permissions->withPivot(Config::get('laratrust.foreign_keys.team'));
+            foreach (Config::get('laratrust.foreign_keys.team') as $team) {
+                $permissions->withPivot($team);
+            }
         }
 
         return $permissions;
@@ -228,7 +234,7 @@ trait LaratrustUserTrait
      * @param  bool  $requireAll All permissions in the array are required.
      * @return bool
      */
-    public function hasPermission($permission, $team = null, $requireAll = false)
+    public function hasPermission($permission, Model $team = null, $requireAll = false)
     {
         return $this->laratrustUserChecker()->currentUserHasPermission(
             $permission,
@@ -275,10 +281,10 @@ trait LaratrustUserTrait
      *
      * @param  string  $relationship
      * @param  mixed  $object
-     * @param  mixed  $team
+     * @param  \Illuminate\Database\Eloquent\Model   $team      Team object.
      * @return static
      */
-    private function attachModel($relationship, $object, $team)
+    private function attachModel($relationship, $object, Model $team)
     {
         if (!Helper::isValidRelationship($relationship)) {
             throw new InvalidArgumentException;
@@ -289,18 +295,22 @@ trait LaratrustUserTrait
         $object = Helper::getIdFor($object, $objectType);
 
         if (Config::get('laratrust.teams.enabled')) {
-            $team = Helper::getIdFor($team, 'team');
+            if (!empty($team) && !Helper::isValidTeamType($team)) {
+                throw new InvalidArgumentException(
+                    'attachModel function only accepts a valid Model object'
+                );
+            }
 
             if (
                     $this->$relationship()
-                    ->wherePivot(Helper::teamForeignKey(), $team)
+                    ->wherePivot(Helper::teamForeignKey($team), $team->id)
                     ->wherePivot(Config::get("laratrust.foreign_keys.{$objectType}"), $object)
                     ->count()
                 ) {
                 return $this;
             }
 
-            $attributes[Helper::teamForeignKey()] = $team;
+            $attributes[Helper::teamForeignKey($team)] = $team->id;
         }
 
         $this->$relationship()->attach(
@@ -308,7 +318,7 @@ trait LaratrustUserTrait
             $attributes
         );
         $this->flushCache();
-        $this->fireLaratrustEvent("{$objectType}.attached", [$this, $object, $team]);
+        $this->fireLaratrustEvent("{$objectType}.attached", [$this, $object, $team->id]);
 
         return $this;
     }

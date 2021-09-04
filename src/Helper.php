@@ -10,6 +10,33 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
 class Helper
 {
     /**
+     * Check if the model is a valid team type.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $team
+     * @return boolean
+     */
+    public static function isValidTeamType(Model $team)
+    {
+        $class = \get_class($team);
+        $types = Config::get("laratrust.models.team");
+        return in_array($class, $types);
+    }
+
+    /**
+     * Gets the it from an array, object or integer.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $team
+     * @return string
+     */
+    public static function getTypeForTeam(Model $team)
+    {
+        $class = \get_class($team);
+        $types = Config::get("laratrust.models.team");
+        $type = array_search($class, $types);
+        return $type;
+    }
+
+    /**
      * Gets the it from an array, object or integer.
      *
      * @param  mixed  $object
@@ -51,11 +78,13 @@ class Helper
     /**
      * Returns the team's foreign key.
      *
+     * @param \Illuminate\Database\Eloquent\Model $team
      * @return string
      */
-    public static function teamForeignKey()
+    public static function teamForeignKey(Model $team)
     {
-        return Config::get('laratrust.foreign_keys.team');
+        $type = self::getTypeForTeam($team);
+        return Config::get("laratrust.foreign_keys.team.{$type}");
     }
 
     /**
@@ -109,7 +138,7 @@ class Helper
      * @param  \Illuminate\Database\Eloquent\Model  $team
      * @return boolean
      */
-    public static function isInSameTeam($rolePermission, $team)
+    public static function isInSameTeam($rolePermission, Model $team)
     {
         if (
             !Config::get('laratrust.teams.enabled')
@@ -118,9 +147,13 @@ class Helper
             return true;
         }
 
-        $teamForeignKey = static::teamForeignKey();
+        if (\is_null($team)) {
+            return false;
+        }
 
-        return $rolePermission['pivot'][$teamForeignKey] == $team;
+        $teamForeignKey = static::teamForeignKey($team);
+
+        return $rolePermission['pivot'][$teamForeignKey] == $team->id;
     }
 
     /**

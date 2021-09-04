@@ -95,7 +95,11 @@ return [
         /**
          * Will be used only if the teams functionality is enabled.
          */
-        'team' => \App\Models\Team::class,
+        'team' => [
+            'team' => \App\Models\Team::class,
+
+            'project' => \App\Models\Project::class,
+        ],
     ],
 
     /*
@@ -115,7 +119,10 @@ return [
         /**
          * Will be used only if the teams functionality is enabled.
          */
-        'teams' => 'teams',
+        'teams' => [
+            'teams' => 'teams',
+            'projects' => 'projects',
+        ],
 
         'role_user' => 'role_user',
 
@@ -151,7 +158,10 @@ return [
         /**
          * Role foreign key on Laratrust's role_user and permission_user tables.
          */
-        'team' => 'team_id',
+        'team' => [
+            'team' => 'team_id',
+            'project' => 'project_id'
+        ],
     ],
 
     /*
