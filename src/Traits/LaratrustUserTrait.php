@@ -5,6 +5,7 @@ namespace Laratrust\Traits;
 use Laratrust\Helper;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Laratrust\Checkers\LaratrustCheckerManager;
@@ -61,7 +62,8 @@ trait LaratrustUserTrait
         );
 
         if (Config::get('laratrust.teams.enabled')) {
-            $roles->withPivot(Config::get('laratrust.foreign_keys.team'));
+            $roles->withPivot('team_id');
+            $roles->withPivot('team_type');
         }
 
         return $roles;
@@ -109,7 +111,6 @@ trait LaratrustUserTrait
             ->withPivot(Config::get('laratrust.foreign_keys.permission'));
     }
 
-
     /**
      * Get a collection of all user teams
      *
@@ -132,7 +133,6 @@ trait LaratrustUserTrait
 
         return $roleTeams->merge($permissionTeams)->unique('id');
     }
-
 
     /**
      * Many-to-Many relations with Permission.
@@ -275,10 +275,10 @@ trait LaratrustUserTrait
      *
      * @param  string  $relationship
      * @param  mixed  $object
-     * @param  mixed  $team
+     * @param  \Illuminate\Database\Eloquent\Model  $team
      * @return static
      */
-    private function attachModel($relationship, $object, $team)
+    private function attachModel($relationship, $object, Model $team)
     {
         if (!Helper::isValidRelationship($relationship)) {
             throw new InvalidArgumentException;
@@ -289,18 +289,25 @@ trait LaratrustUserTrait
         $object = Helper::getIdFor($object, $objectType);
 
         if (Config::get('laratrust.teams.enabled')) {
-            $team = Helper::getIdFor($team, 'team');
+            if (!empty($team) && !Helper::isValidTeamType($team)) {
+                throw new InvalidArgumentException(
+                    'attachModel function only accepts a valid Model object'
+                );
+            }
+            $teamType = Helper::getTypeForTeam($team);
 
             if (
                     $this->$relationship()
-                    ->wherePivot(Helper::teamForeignKey(), $team)
+                    ->wherePivot('team_id', $team->id)
+                    ->wherePivot('team_type', $teamType)
                     ->wherePivot(Config::get("laratrust.foreign_keys.{$objectType}"), $object)
                     ->count()
                 ) {
                 return $this;
             }
 
-            $attributes[Helper::teamForeignKey()] = $team;
+            $attributes['team_id'] = $team->id;
+            $attributes['team_type'] = get_class($team);
         }
 
         $this->$relationship()->attach(

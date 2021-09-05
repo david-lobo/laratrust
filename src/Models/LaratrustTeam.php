@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
 use Laratrust\Traits\LaratrustTeamTrait;
 use Laratrust\Contracts\LaratrustTeamInterface;
+use Laratrust\Helper;
 
 class LaratrustTeam extends Model implements LaratrustTeamInterface
 {
@@ -27,6 +28,7 @@ class LaratrustTeam extends Model implements LaratrustTeamInterface
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = Config::get('laratrust.tables.teams');
+        $type = Helper::getTypeForTeam($this);
+        $this->table = Config::get("laratrust.tables.teams.{$type}");
     }
 }

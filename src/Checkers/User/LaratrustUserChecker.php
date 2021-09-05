@@ -17,9 +17,9 @@ abstract class LaratrustUserChecker
         $this->user = $user;
     }
 
-    abstract public function currentUserHasRole($name, $team = null, $requireAll = false);
+    abstract public function currentUserHasRole($name, Model $team = null, $requireAll = false);
 
-    abstract public function currentUserHasPermission($permission, $team = null, $requireAll = false);
+    abstract public function currentUserHasPermission($permission, Model $team = null, $requireAll = false);
 
     /**
      * Checks role(s) and permission(s).

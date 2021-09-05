@@ -6,6 +6,7 @@ use Laratrust\Helper;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Database\Eloquent\Model;
 
 class LaratrustUserDefaultChecker extends LaratrustUserChecker
 {
@@ -44,11 +45,11 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
      * Checks if the user has a role by its name.
      *
      * @param  string|array  $name       Role name or array of role names.
-     * @param  string|bool   $team      Team name or requiredAll roles.
+     * @param  \Illuminate\Database\Eloquent\Model  $team
      * @param  bool          $requireAll All roles in the array are required.
      * @return bool
      */
-    public function currentUserHasRole($name, $team = null, $requireAll = false)
+    public function currentUserHasRole($name, Model $team = null, $requireAll = false)
     {
         $name = Helper::standardize($name);
         list($team, $requireAll) = Helper::assignRealValuesTo($team, $requireAll, 'is_bool');
@@ -74,8 +75,6 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
             return $requireAll;
         }
 
-        $team = Helper::fetchTeam($team);
-
         foreach ($this->userCachedRoles() as $role) {
             if ($role['name'] == $name && Helper::isInSameTeam($role, $team)) {
                 return true;
@@ -89,11 +88,11 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
      * Check if user has a permission by its name.
      *
      * @param  string|array  $permission Permission string or array of permissions.
-     * @param  string|bool  $team      Team name or requiredAll roles.
+     * @param  \Illuminate\Database\Eloquent\Model  $team
      * @param  bool  $requireAll All roles in the array are required.
      * @return bool
      */
-    public function currentUserHasPermission($permission, $team = null, $requireAll = false)
+    public function currentUserHasPermission($permission, Model $team = null, $requireAll = false)
     {
         $permission = Helper::standardize($permission);
         list($team, $requireAll) = Helper::assignRealValuesTo($team, $requireAll, 'is_bool');
@@ -118,8 +117,6 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
             // Return the value of $requireAll.
             return $requireAll;
         }
-
-        $team = Helper::fetchTeam($team);
 
         foreach ($this->userCachedPermissions() as $perm) {
             if (Helper::isInSameTeam($perm, $team) && Str::is($permission, $perm['name'])) {
