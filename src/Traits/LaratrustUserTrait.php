@@ -295,11 +295,12 @@ trait LaratrustUserTrait
                 );
             }
             $teamType = Helper::getTypeForTeam($team);
+            $teamClass = get_class($team);
 
             if (
                     $this->$relationship()
                     ->wherePivot('team_id', $team->id)
-                    ->wherePivot('team_type', $teamType)
+                    ->wherePivot('team_type', $teamClass)
                     ->wherePivot(Config::get("laratrust.foreign_keys.{$objectType}"), $object)
                     ->count()
                 ) {
@@ -307,7 +308,7 @@ trait LaratrustUserTrait
             }
 
             $attributes['team_id'] = $team->id;
-            $attributes['team_type'] = get_class($team);
+            $attributes['team_type'] = $teamClass;
         }
 
         $this->$relationship()->attach(
@@ -338,10 +339,11 @@ trait LaratrustUserTrait
         $relationshipQuery = $this->$relationship();
 
         if (Config::get('laratrust.teams.enabled')) {
-            $relationshipQuery->wherePivot(
-                Helper::teamForeignKey(),
-                Helper::getIdFor($team, 'team')
-            );
+            $teamType = Helper::getTypeForTeam($team);
+            $teamClass = get_class($team);
+
+            $relationshipQuery->wherePivot('team_id', $team->id)
+            ->wherePivot('team_type', $teamClass);
         }
 
         $object = Helper::getIdFor($object, $objectType);
