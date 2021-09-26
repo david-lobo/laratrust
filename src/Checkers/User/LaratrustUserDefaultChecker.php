@@ -13,7 +13,7 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
     /**
      * Checks if the user has a role by its name.
      *
-     * @param  string|bool   $team      Team name.
+     * @param  \Illuminate\Database\Eloquent\Model  $team
      * @return array
      */
     public function getCurrentUserRoles($team = null)
@@ -22,6 +22,12 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
 
         if (config('laratrust.teams.enabled') === false) {
             return $roles->pluck('name')->toArray();
+        }
+
+        if (!empty($team) && !Helper::isValidTeamType($team)) {
+            throw new InvalidArgumentException(
+                'getCurrentUserRoles function only accepts a valid Model object'
+            );
         }
 
         if ($team === null && config('laratrust.teams.strict_check') === false) {
@@ -35,9 +41,12 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
         }
 
         $teamId = Helper::fetchTeam($team);
-
-        return $roles->filter(function ($role) use ($teamId) {
-            return $role['pivot'][config('laratrust.foreign_keys.team')] == $teamId;
+        
+        return $roles->filter(function ($role) use ($teamId, $team) {
+            return 
+                $role['pivot']['team_id'] == $team->id &&
+                $role['pivot']['team_type'] == \get_class($team);
+                ;
         })->pluck('name')->toArray();
     }
 
