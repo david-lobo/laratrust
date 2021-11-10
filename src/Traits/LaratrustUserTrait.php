@@ -172,9 +172,9 @@ trait LaratrustUserTrait
      * @param  string|bool   $team      Team name.
      * @return bool
      */
-    public function getRoles($team = null)
+    public function getRoles($team = null, $nameOnly = true)
     {
-        return $this->laratrustUserChecker()->getCurrentUserRoles($team);
+        return $this->laratrustUserChecker()->getCurrentUserRoles($team, $nameOnly);
     }
 
     /**
