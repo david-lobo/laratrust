@@ -136,7 +136,7 @@ class Helper
      * @param  \Illuminate\Database\Eloquent\Model  $team
      * @return boolean
      */
-    public static function isInSameTeam($rolePermission, Model $team)
+    public static function isInSameTeam($rolePermission, Model $team = null)
     {
         if (
             !Config::get('laratrust.teams.enabled')
@@ -145,13 +145,17 @@ class Helper
             return true;
         }
 
-        $teamForeignKey = 'team_id';
-        $teamTypeField = 'team_type';
-        $teamType = \get_class($team);
+        if (Config::get('laratrust.teams.strict_check') && \is_null($team)) {
+            return true;
+        }
 
         if (is_null($team) || !self::isValidTeamType(($team))) {
             return false;
         }
+
+        $teamForeignKey = 'team_id';
+        $teamTypeField = 'team_type';
+        $teamType = \get_class($team);
 
         return (
             $rolePermission['pivot'][$teamForeignKey] == $team->id &&
