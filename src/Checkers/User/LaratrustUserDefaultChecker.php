@@ -16,11 +16,14 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
      * @param  \Illuminate\Database\Eloquent\Model  $team
      * @return array
      */
-    public function getCurrentUserRoles($team = null)
+    public function getCurrentUserRoles($team = null, $nameOnly = true)
     {
         $roles = collect($this->userCachedRoles());
 
         if (config('laratrust.teams.enabled') === false) {
+            if (!$nameOnly) {
+                return $roles;
+            }
             return $roles->pluck('name')->toArray();
         }
 
@@ -31,23 +34,36 @@ class LaratrustUserDefaultChecker extends LaratrustUserChecker
         }
 
         if ($team === null && config('laratrust.teams.strict_check') === false) {
+            if (!$nameOnly) {
+                return $roles;
+            }
             return $roles->pluck('name')->toArray();
         }
 
         if ($team === null) {
-            return $roles->filter(function ($role) {
+            $return = $roles->filter(function ($role) {
                 return $role['pivot'][config('laratrust.foreign_keys.team')] === null;
-            })->pluck('name')->toArray();
+            });
+
+            if ($nameOnly) {
+                return $return->pluck('name')->toArray();
+            }
         }
 
         $teamId = Helper::fetchTeam($team);
         
-        return $roles->filter(function ($role) use ($teamId, $team) {
+        $return = $roles->filter(function ($role) use ($teamId, $team) {
             return 
                 $role['pivot']['team_id'] == $team->id &&
                 $role['pivot']['team_type'] == \get_class($team);
                 ;
-        })->pluck('name')->toArray();
+        });
+
+        if ($nameOnly) {
+            return $return->pluck('name')->toArray();
+        } else {
+            return $return;
+        }
     }
 
     /**
